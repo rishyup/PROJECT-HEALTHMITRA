@@ -1,0 +1,233 @@
+
+import React, { useState, useEffect, useCallback } from "react";
+import { Conversation } from "@/entities/Conversation";
+import { User } from "@/entities/User";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MessageCircle, Search, Calendar, Globe, Bot, User as UserIcon } from "lucide-react";
+import { format, isToday, isYesterday, parseISO } from "date-fns";
+
+import ConversationCard from "../components/history/ConversationCard";
+
+export default function HistoryPage() {
+  const [conversations, setConversations] = useState([]);
+  const [filteredConversations, setFilteredConversations] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState("all");
+  const [selectedPeriod, setSelectedPeriod] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState(null);
+
+  const loadUser = async () => {
+    try {
+      const currentUser = await User.me();
+      setUser(currentUser);
+    } catch (error) {
+      console.log("User not authenticated");
+    }
+  };
+
+  const loadConversations = async () => {
+    setIsLoading(true);
+    try {
+      const allConversations = await Conversation.list("-created_date");
+      setConversations(allConversations);
+    } catch (error) {
+      console.error("Error loading conversations:", error);
+    }
+    setIsLoading(false);
+  };
+
+  const filterConversations = useCallback(() => {
+    let filtered = [...conversations];
+
+    if (searchQuery) {
+      filtered = filtered.filter(conv =>
+        conv.user_message.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        conv.bot_response.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    if (selectedLanguage !== "all") {
+      filtered = filtered.filter(conv => conv.language === selectedLanguage);
+    }
+
+    if (selectedPeriod !== "all") {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+      const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      filtered = filtered.filter(conv => {
+        const convDate = new Date(conv.created_date);
+        switch (selectedPeriod) {
+          case "today":
+            return convDate >= today;
+          case "yesterday":
+            return convDate >= yesterday && convDate < today;
+          case "week":
+            return convDate >= weekAgo;
+          default:
+            return true;
+        }
+      });
+    }
+
+    setFilteredConversations(filtered);
+  }, [conversations, searchQuery, selectedLanguage, selectedPeriod]); // Dependencies for useCallback
+
+  useEffect(() => {
+    loadConversations();
+    loadUser();
+  }, []);
+
+  useEffect(() => {
+    filterConversations();
+  }, [filterConversations]); // Now depends on the memoized filterConversations
+
+  const getDateLabel = (date) => {
+    const convDate = parseISO(date);
+    if (isToday(convDate)) return "Today";
+    if (isYesterday(convDate)) return "Yesterday";
+    return format(convDate, "MMMM d, yyyy");
+  };
+
+  const groupedConversations = filteredConversations.reduce((groups, conv) => {
+    const dateLabel = getDateLabel(conv.created_date);
+    if (!groups[dateLabel]) groups[dateLabel] = [];
+    groups[dateLabel].push(conv);
+    return groups;
+  }, {});
+
+  const languages = [
+    { code: "all", name: "All Languages" },
+    { code: "english", name: "English" },
+    { code: "hindi", name: "Hindi" },
+    { code: "bengali", name: "Bengali" },
+    { code: "telugu", name: "Telugu" },
+    { code: "marathi", name: "Marathi" },
+    { code: "tamil", name: "Tamil" },
+    { code: "gujarati", name: "Gujarati" },
+    { code: "kannada", name: "Kannada" },
+    { code: "malayalam", name: "Malayalam" },
+    { code: "punjabi", name: "Punjabi" }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50 p-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">My Conversations</h1>
+          <p className="text-slate-600">Review your health discussions and advice</p>
+          {user && (
+            <div className="mt-4 flex gap-4">
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                <MessageCircle className="w-4 h-4 mr-1" />
+                {user.total_conversations || 0} total chats
+              </Badge>
+              {user.last_active && (
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                  <Calendar className="w-4 h-4 mr-1" />
+                  Last active: {format(parseISO(user.last_active), "MMM d, HH:mm")}
+                </Badge>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Filters */}
+        <Card className="mb-6 bg-white/80 backdrop-blur-sm border-slate-200/60 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                <Input
+                  placeholder="Search conversations..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-white/80 border-slate-200"
+                />
+              </div>
+              <div className="flex gap-3">
+                <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                  <SelectTrigger className="w-40 bg-white/80 border-slate-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {languages.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        <div className="flex items-center gap-2">
+                          <Globe className="w-4 h-4" />
+                          {lang.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                  <SelectTrigger className="w-32 bg-white/80 border-slate-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="yesterday">Yesterday</SelectItem>
+                    <SelectItem value="week">Past Week</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Conversations */}
+        {isLoading ? (
+          <div className="space-y-6">
+            {Array(5).fill(0).map((_, index) => (
+              <Card key={index} className="animate-pulse bg-white/80">
+                <CardContent className="p-6">
+                  <div className="space-y-3">
+                    <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                    <div className="h-4 bg-slate-200 rounded"></div>
+                    <div className="h-4 bg-slate-200 rounded w-5/6"></div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : Object.keys(groupedConversations).length > 0 ? (
+          <div className="space-y-8">
+            {Object.entries(groupedConversations).map(([dateLabel, convs]) => (
+              <div key={dateLabel}>
+                <h2 className="text-lg font-semibold text-slate-700 mb-4 sticky top-4 bg-gradient-to-r from-slate-50 to-transparent py-2">
+                  {dateLabel}
+                </h2>
+                <div className="space-y-4">
+                  {convs.map((conversation) => (
+                    <ConversationCard key={conversation.id} conversation={conversation} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Card className="bg-white/80 backdrop-blur-sm border-slate-200/60 shadow-sm">
+            <CardContent className="p-12 text-center">
+              <MessageCircle className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-600 mb-2">No Conversations Found</h3>
+              <p className="text-slate-500">
+                {searchQuery || selectedLanguage !== "all" || selectedPeriod !== "all"
+                  ? "Try adjusting your search filters"
+                  : "Start chatting with our health assistant to see your conversation history here"
+                }
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}

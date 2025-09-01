@@ -1,0 +1,185 @@
+
+import React, { useState, useEffect, useCallback } from "react";
+import { HealthTopic } from "@/entities/HealthTopic";
+import { User } from "@/entities/User";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Search, 
+  Shield, 
+  Thermometer, 
+  Syringe, 
+  Baby, 
+  Heart, 
+  Apple,
+  Brain,
+  AlertTriangle,
+  BookOpen
+} from "lucide-react";
+
+import TopicCard from "../components/topics/TopicCard";
+import CategoryFilter from "../components/topics/CategoryFilter";
+
+const categoryIcons = {
+  preventive_care: Shield,
+  symptoms: Thermometer,
+  vaccination: Syringe,
+  maternal_health: Heart,
+  child_health: Baby,
+  nutrition: Apple,
+  mental_health: Brain,
+  emergency: AlertTriangle
+};
+
+export default function HealthTopicsPage() {
+  const [topics, setTopics] = useState([]);
+  const [filteredTopics, setFilteredTopics] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [currentLanguage, setCurrentLanguage] = useState("english");
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadUserPreferences = useCallback(async () => {
+    try {
+      const user = await User.me();
+      if (user.preferred_language) {
+        setCurrentLanguage(user.preferred_language);
+      }
+    } catch (error) {
+      console.log("User not authenticated, using default language");
+    }
+  }, []); // No dependencies, as it only fetches user and sets language once
+
+  const loadTopics = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const allTopics = await HealthTopic.list();
+      setTopics(allTopics);
+    } catch (error) {
+      console.error("Error loading topics:", error);
+    }
+    setIsLoading(false);
+  }, []); // No dependencies, as it only loads topics once
+
+  const filterTopics = useCallback(() => {
+    let filtered = topics.filter(topic => 
+      topic.is_active && topic.language === currentLanguage
+    );
+
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(topic => topic.category === selectedCategory);
+    }
+
+    if (searchQuery) {
+      filtered = filtered.filter(topic =>
+        topic.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        topic.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        topic.keywords?.some(keyword => 
+          keyword.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      );
+    }
+
+    setFilteredTopics(filtered);
+  }, [topics, searchQuery, selectedCategory, currentLanguage]);
+
+  useEffect(() => {
+    loadTopics();
+    loadUserPreferences();
+  }, [loadTopics, loadUserPreferences]); // Depend on memoized functions
+
+  useEffect(() => {
+    filterTopics();
+  }, [filterTopics]); // Depend on memoized function
+
+  const categories = [
+    { id: "all", name: "All Topics", icon: BookOpen },
+    { id: "preventive_care", name: "Preventive Care", icon: Shield },
+    { id: "symptoms", name: "Symptoms", icon: Thermometer },
+    { id: "vaccination", name: "Vaccination", icon: Syringe },
+    { id: "maternal_health", name: "Maternal Health", icon: Heart },
+    { id: "child_health", name: "Child Health", icon: Baby },
+    { id: "nutrition", name: "Nutrition", icon: Apple },
+    { id: "mental_health", name: "Mental Health", icon: Brain },
+    { id: "emergency", name: "Emergency", icon: AlertTriangle }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50 p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Health Topics Library</h1>
+          <p className="text-slate-600">Explore reliable health information in your preferred language</p>
+        </div>
+
+        {/* Search and Filters */}
+        <Card className="mb-6 bg-white/80 backdrop-blur-sm border-slate-200/60 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                <Input
+                  placeholder="Search health topics..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-white/80 border-slate-200"
+                />
+              </div>
+              <CategoryFilter
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onCategoryChange={setSelectedCategory}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Topics Grid */}
+        {isLoading ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array(6).fill(0).map((_, index) => (
+              <Card key={index} className="animate-pulse">
+                <CardHeader>
+                  <div className="h-6 bg-slate-200 rounded w-3/4"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-slate-200 rounded"></div>
+                    <div className="h-4 bg-slate-200 rounded w-5/6"></div>
+                    <div className="h-4 bg-slate-200 rounded w-4/6"></div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredTopics.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTopics.map((topic) => (
+              <TopicCard
+                key={topic.id}
+                topic={topic}
+                icon={categoryIcons[topic.category]}
+              />
+            ))}
+          </div>
+        ) : (
+          <Card className="bg-white/80 backdrop-blur-sm border-slate-200/60 shadow-sm">
+            <CardContent className="p-12 text-center">
+              <BookOpen className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-600 mb-2">No Topics Found</h3>
+              <p className="text-slate-500">
+                {searchQuery 
+                  ? "Try adjusting your search terms or category filter"
+                  : "Health topics will appear here once they're added to the library"
+                }
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}

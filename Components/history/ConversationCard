@@ -1,0 +1,96 @@
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Bot, User, Globe } from "lucide-react";
+import { format, parseISO } from "date-fns";
+
+export default function ConversationCard({ conversation }) {
+  const getCategoryColor = (category) => {
+    const colors = {
+      preventive_care: "bg-blue-100 text-blue-800 border-blue-200",
+      symptoms: "bg-red-100 text-red-800 border-red-200",
+      vaccination: "bg-green-100 text-green-800 border-green-200",
+      maternal_health: "bg-pink-100 text-pink-800 border-pink-200",
+      child_health: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      nutrition: "bg-orange-100 text-orange-800 border-orange-200",
+      mental_health: "bg-purple-100 text-purple-800 border-purple-200",
+      emergency: "bg-red-100 text-red-800 border-red-200",
+      general: "bg-gray-100 text-gray-800 border-gray-200"
+    };
+    return colors[category] || colors.general;
+  };
+
+  return (
+    <Card className="bg-white/80 backdrop-blur-sm border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-200">
+      <CardContent className="p-6">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex gap-2">
+            {conversation.topic_category && (
+              <Badge 
+                variant="secondary" 
+                className={`${getCategoryColor(conversation.topic_category)} border text-xs`}
+              >
+                {conversation.topic_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </Badge>
+            )}
+            <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200">
+              <Globe className="w-3 h-3 mr-1" />
+              {conversation.language}
+            </Badge>
+          </div>
+          <span className="text-sm text-slate-500">
+            {format(parseISO(conversation.created_date), "HH:mm")}
+          </span>
+        </div>
+
+        {/* User Message */}
+        <div className="mb-4">
+          <div className="flex items-start gap-3">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-r from-slate-100 to-slate-200 border border-slate-200 flex items-center justify-center flex-shrink-0 mt-1">
+              <User className="w-3 h-3 text-slate-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-slate-800 font-medium text-sm leading-relaxed">
+                {conversation.user_message}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bot Response */}
+        <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-4 border border-blue-100">
+          <div className="flex items-start gap-3">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-100 to-green-100 border border-blue-200 flex items-center justify-center flex-shrink-0 mt-1">
+              <Bot className="w-3 h-3 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-slate-700 text-sm leading-relaxed line-clamp-4">
+                {conversation.bot_response}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Satisfaction Rating */}
+        {conversation.user_satisfaction && (
+          <div className="mt-4 flex items-center gap-2">
+            <span className="text-sm text-slate-500">Helpful:</span>
+            <div className="flex gap-1">
+              {Array(5).fill(0).map((_, index) => (
+                <div
+                  key={index}
+                  className={`w-3 h-3 rounded-full ${
+                    index < conversation.user_satisfaction 
+                      ? "bg-yellow-400" 
+                      : "bg-slate-200"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

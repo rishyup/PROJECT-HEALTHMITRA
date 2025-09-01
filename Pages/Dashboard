@@ -1,0 +1,131 @@
+import React, { useState, useEffect } from "react";
+import { Conversation } from "@/entities/Conversation";
+import { HealthTopic } from "@/entities/HealthTopic";
+import { User } from "@/entities/User";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { 
+  BarChart3, 
+  MessageCircle, 
+  BookOpen, 
+  Users, 
+  Globe,
+  TrendingUp,
+  Heart
+} from "lucide-react";
+
+import StatsOverview from "../components/dashboard/StatsOverview";
+import LanguageDistribution from "../components/dashboard/LanguageDistribution";
+import TopicPopularity from "../components/dashboard/TopicPopularity";
+import RecentActivity from "../components/dashboard/RecentActivity";
+
+export default function DashboardPage() {
+  const [stats, setStats] = useState({
+    totalConversations: 0,
+    totalTopics: 0,
+    totalUsers: 0,
+    averageRating: 0
+  });
+  const [conversations, setConversations] = useState([]);
+  const [topics, setTopics] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    setIsLoading(true);
+    try {
+      const [allConversations, allTopics] = await Promise.all([
+        Conversation.list("-created_date"),
+        HealthTopic.list()
+      ]);
+
+      setConversations(allConversations);
+      setTopics(allTopics);
+
+      // Calculate stats
+      const avgRating = allConversations
+        .filter(c => c.user_satisfaction)
+        .reduce((sum, c) => sum + c.user_satisfaction, 0) / 
+        allConversations.filter(c => c.user_satisfaction).length || 0;
+
+      setStats({
+        totalConversations: allConversations.length,
+        totalTopics: allTopics.length,
+        totalUsers: new Set(allConversations.map(c => c.created_by)).size,
+        averageRating: avgRating
+      });
+
+    } catch (error) {
+      console.error("Error loading dashboard data:", error);
+    }
+    setIsLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 mb-2 flex items-center gap-3">
+            <BarChart3 className="w-8 h-8 text-blue-600" />
+            Health Assistant Dashboard
+          </h1>
+          <p className="text-slate-600">Monitor usage and effectiveness of your healthcare education platform</p>
+        </div>
+
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <StatsOverview
+            title="Total Conversations"
+            value={stats.totalConversations}
+            icon={MessageCircle}
+            color="blue"
+            isLoading={isLoading}
+          />
+          <StatsOverview
+            title="Health Topics"
+            value={stats.totalTopics}
+            icon={BookOpen}
+            color="green"
+            isLoading={isLoading}
+          />
+          <StatsOverview
+            title="Active Users"
+            value={stats.totalUsers}
+            icon={Users}
+            color="purple"
+            isLoading={isLoading}
+          />
+          <StatsOverview
+            title="Satisfaction"
+            value={`${stats.averageRating.toFixed(1)}/5`}
+            icon={Heart}
+            color="pink"
+            isLoading={isLoading}
+          />
+        </div>
+
+        {/* Charts and Analytics */}
+        <div className="grid lg:grid-cols-2 gap-6 mb-8">
+          <LanguageDistribution 
+            conversations={conversations}
+            isLoading={isLoading}
+          />
+          <TopicPopularity 
+            conversations={conversations}
+            isLoading={isLoading}
+          />
+        </div>
+
+        {/* Recent Activity */}
+        <RecentActivity 
+          conversations={conversations}
+          isLoading={isLoading}
+        />
+      </div>
+    </div>
+  );
+}

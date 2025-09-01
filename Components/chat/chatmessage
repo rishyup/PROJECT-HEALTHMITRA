@@ -1,0 +1,53 @@
+import React from "react";
+import { Card } from "@/components/ui/card";
+import { Bot, User, AlertTriangle } from "lucide-react";
+import { format } from "date-fns";
+
+export default function ChatMessage({ message }) {
+  const isBot = message.type === 'bot';
+  
+  return (
+    <div className={`flex ${isBot ? 'justify-start' : 'justify-end'} mb-4`}>
+      <div className={`flex items-start gap-3 max-w-[80%] ${isBot ? '' : 'flex-row-reverse'}`}>
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm ${
+          isBot 
+            ? 'bg-gradient-to-r from-blue-100 to-green-100 border border-blue-200' 
+            : 'bg-gradient-to-r from-slate-100 to-slate-200 border border-slate-200'
+        }`}>
+          {isBot ? (
+            <Bot className="w-4 h-4 text-blue-600" />
+          ) : (
+            <User className="w-4 h-4 text-slate-600" />
+          )}
+        </div>
+        
+        <Card className={`${
+          isBot 
+            ? 'bg-white/90 backdrop-blur-sm border-slate-200/60 shadow-sm' 
+            : 'bg-gradient-to-r from-blue-600 to-green-600 border-transparent shadow-lg text-white'
+        } ${message.isError ? 'border-red-200 bg-red-50' : ''}`}>
+          <div className="p-4">
+            {message.isError && (
+              <div className="flex items-center gap-2 mb-2 text-red-600">
+                <AlertTriangle className="w-4 h-4" />
+                <span className="text-sm font-medium">Connection Issue</span>
+              </div>
+            )}
+            <p className={`text-sm leading-relaxed ${
+              isBot && !message.isError ? 'text-slate-700' : 
+              message.isError ? 'text-red-700' : 'text-white'
+            }`}>
+              {message.content}
+            </p>
+            <p className={`text-xs mt-2 ${
+              isBot && !message.isError ? 'text-slate-500' : 
+              message.isError ? 'text-red-500' : 'text-blue-100'
+            }`}>
+              {format(message.timestamp, 'HH:mm')}
+            </p>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}

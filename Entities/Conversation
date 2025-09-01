@@ -1,0 +1,61 @@
+{
+  "name": "Conversation",
+  "type": "object",
+  "properties": {
+    "user_message": {
+      "type": "string",
+      "description": "The user's message"
+    },
+    "bot_response": {
+      "type": "string",
+      "description": "The chatbot's response"
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "english",
+        "hindi",
+        "bengali",
+        "telugu",
+        "marathi",
+        "tamil",
+        "gujarati",
+        "kannada",
+        "malayalam",
+        "punjabi"
+      ],
+      "default": "english",
+      "description": "Language of the conversation"
+    },
+    "topic_category": {
+      "type": "string",
+      "enum": [
+        "general",
+        "preventive_care",
+        "symptoms",
+        "vaccination",
+        "maternal_health",
+        "child_health",
+        "nutrition",
+        "mental_health",
+        "emergency"
+      ],
+      "description": "Category of health topic discussed"
+    },
+    "user_satisfaction": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "User satisfaction rating (1-5)"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Session identifier for grouping related conversations"
+    }
+  },
+  "required": [
+    "user_message",
+    "bot_response",
+    "language"
+  ]
+}

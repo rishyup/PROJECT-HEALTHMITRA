@@ -1,0 +1,82 @@
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ExternalLink } from "lucide-react";
+
+export default function TopicCard({ topic, icon: Icon }) {
+  const getCategoryColor = (category) => {
+    const colors = {
+      preventive_care: "bg-blue-100 text-blue-800 border-blue-200",
+      symptoms: "bg-red-100 text-red-800 border-red-200",
+      vaccination: "bg-green-100 text-green-800 border-green-200",
+      maternal_health: "bg-pink-100 text-pink-800 border-pink-200",
+      child_health: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      nutrition: "bg-orange-100 text-orange-800 border-orange-200",
+      mental_health: "bg-purple-100 text-purple-800 border-purple-200",
+      emergency: "bg-red-100 text-red-800 border-red-200"
+    };
+    return colors[category] || "bg-gray-100 text-gray-800 border-gray-200";
+  };
+
+  return (
+    <Card className="bg-white/80 backdrop-blur-sm border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            {Icon && (
+              <div className="p-2 rounded-lg bg-gradient-to-r from-blue-100 to-green-100 border border-blue-200">
+                <Icon className="w-5 h-5 text-blue-600" />
+              </div>
+            )}
+            <div className="flex-1">
+              <CardTitle className="text-lg font-semibold text-slate-800 leading-tight">
+                {topic.title}
+              </CardTitle>
+            </div>
+          </div>
+        </div>
+        <Badge 
+          variant="secondary" 
+          className={`${getCategoryColor(topic.category)} border text-xs w-fit mt-2`}
+        >
+          {topic.category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+        </Badge>
+      </CardHeader>
+      <CardContent>
+        <p className="text-slate-600 text-sm leading-relaxed mb-4 line-clamp-3">
+          {topic.content.substring(0, 150)}
+          {topic.content.length > 150 && '...'}
+        </p>
+        
+        {topic.keywords && topic.keywords.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-4">
+            {topic.keywords.slice(0, 3).map((keyword, index) => (
+              <Badge 
+                key={index} 
+                variant="outline" 
+                className="text-xs bg-slate-50 text-slate-600 border-slate-200"
+              >
+                {keyword}
+              </Badge>
+            ))}
+            {topic.keywords.length > 3 && (
+              <Badge variant="outline" className="text-xs bg-slate-50 text-slate-600 border-slate-200">
+                +{topic.keywords.length - 3} more
+              </Badge>
+            )}
+          </div>
+        )}
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="w-full hover:bg-gradient-to-r hover:from-blue-50 hover:to-green-50 hover:border-blue-200 transition-all duration-200"
+        >
+          <ExternalLink className="w-4 h-4 mr-2" />
+          Read More
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}

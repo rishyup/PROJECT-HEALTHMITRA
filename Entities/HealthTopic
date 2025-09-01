@@ -1,0 +1,63 @@
+{
+  "name": "HealthTopic",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the health topic"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "preventive_care",
+        "symptoms",
+        "vaccination",
+        "maternal_health",
+        "child_health",
+        "nutrition",
+        "mental_health",
+        "emergency"
+      ],
+      "description": "Category of the health topic"
+    },
+    "content": {
+      "type": "string",
+      "description": "Detailed content about the health topic"
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "english",
+        "hindi",
+        "bengali",
+        "telugu",
+        "marathi",
+        "tamil",
+        "gujarati",
+        "kannada",
+        "malayalam",
+        "punjabi"
+      ],
+      "default": "english",
+      "description": "Language of the content"
+    },
+    "keywords": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Keywords associated with this topic"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this topic is active"
+    }
+  },
+  "required": [
+    "title",
+    "category",
+    "content",
+    "language"
+  ]
+}
